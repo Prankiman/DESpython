@@ -170,26 +170,35 @@ def des(key, message, decrypt):
         
         # encoding or decoding
 
-        if decrypt:
-                keys.reverse()  # structure of feistel cipher allows for decryption to be near identical encryption 
-
+        
         message_chunks = []
         ciphered_chunks = []
 
-        n = len(message) % 8
+        if decrypt:
+                keys.reverse()  # structure of feistel cipher allows for decryption to be near identical encryption 
+                message = int(message, 16)
+                while message.bit_length() > 0:
+                        message_chunks.append(message & 0xffffffffffffffff)
+                        message >>= 64
+                message_chunks.reverse()
 
-        if n > 0:
-                message += ' ' * (8 - n)
-        print(message)
-        message = message.encode('iso-8859-1')
+        else:
+                message = message.encode('iso-8859-1')
+
+                n = len(message) % 8
+
+                if n > 0:
+                        message += bytes([0]) * (8 - n)
+                
+                print(message)
 
 
-        for i in range(0, len(message), 8):
-                chunk = 0
-                for j in range(8):
-                        chunk |= message[i+j]
-                        chunk <<= 8
-                message_chunks.append(chunk >> 8)
+                for i in range(0, len(message), 8):
+                        chunk = 0
+                        for j in range(8):
+                                chunk |= message[i+j]
+                                chunk <<= 8
+                        message_chunks.append(chunk >> 8)
         
 
         for chunk in message_chunks:
@@ -211,20 +220,26 @@ def des(key, message, decrypt):
                 for i in range(8):
                         ciphered_chunks.append((cipher_chunk >> (56)) & 0xff)
                         cipher_chunk <<= 8
-        print(ciphered_chunks)
+        
+        ciphered_value = 0
+
+        for i in ciphered_chunks:
+                ciphered_value <<= 8
+                ciphered_value |= i
+
+        print(f'hex representation of encrypted/decrypted message: {hex(ciphered_value)}')
         ciphered_chunks = bytes(ciphered_chunks).decode('iso-8859-1')
         
         return ciphered_chunks
         
 def main():
         key = int(input('enter 64 bit number in hex e.g ffffffffffffffff> '), 16)
-        message = input('enter text message (if u wanna decrypt use the encrypted message) > ')
-        decrypt = 'y' in input('do you want to decrypt (y/n) ? (make sure u typed in correct key if decrypting) > ')
+        message = input('enter text message (if u wanna decrypt use the encrypted message\'s hex representation) > ')
+        decrypt = 'y' in input('do you want to decrypt (y/n) ? > ')
 
-        print(des(key,message, decrypt))
+        print(f'text representation of encrypted/decrypted message: {des(key,message, decrypt)}')
                         
         
 
 if __name__ == '__main__':
     main()
-
